@@ -1,6 +1,6 @@
 # WrkzCoin
 
-[![Discord](https://img.shields.io/discord/460755304863498250?label=WrkzCoin%20Discord)](https://chat.wrkz.work) [![GitHub contributors](https://img.shields.io/github/contributors-anon/wrkzcoin/wrkzcoin?label=Contributors)](https://github.com/wrkzcoin/wrkzcoin/graphs/contributors) [![GitHub issues](https://img.shields.io/github/issues/wrkzcoin/wrkzcoin?label=Issues)](https://github.com/wrkzcoin/wrkzcoin/issues) ![GitHub stars](https://img.shields.io/github/stars/wrkzcoin/wrkzcoin?label=Github%20Stars)
+[![Discord](https://img.shields.io/discord/460755304863498250?label=WrkzCoin%20Discord)](https://chat.wrkz.work) [![GitHub contributors](https://img.shields.io/github/contributors-anon/wrkzcoin/wrkz-wallet-api-docs?label=Contributors)](https://github.com/wrkzcoin/wrkz-wallet-api-docs/graphs/contributors) [![GitHub issues](https://img.shields.io/github/issues/wrkzcoin/wrkz-wallet-api-docs?label=Issues)](https://github.com/wrkzcoin/wrkz-wallet-api-docs/issues) ![GitHub stars](https://img.shields.io/github/stars/wrkzcoin/wrkz-wallet-api-docs?label=Github%20Stars)
 
 # wallet-api-docs
 
