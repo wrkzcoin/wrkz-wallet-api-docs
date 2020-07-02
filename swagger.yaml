@@ -1313,7 +1313,7 @@ paths:
             mixin:
               type: number
               description: The mixin level to use
-              example: 3
+              example: 1
             sourceAddresses:
               type: array
               items:
@@ -1628,7 +1628,7 @@ definitions:
       mixin:
         type: number
         description: The mixin level to use
-        example: 3
+        example: 1
         default: The default mixin defined by the core software for the current height
       fee:
         type: number
