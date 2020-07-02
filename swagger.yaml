@@ -1,718 +1,1779 @@
 ---
-swagger: "2.0"
+swagger: '2.0'
 info:
-  description: "This is a sample server Petstore server.  You can find out more about\
-    \ Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).\
-    \  For this sample, you can use the api key `special-key` to test the authorization\
-    \ filters."
-  version: "1.0.5"
-  title: "Swagger Petstore"
-  termsOfService: "http://swagger.io/terms/"
-  contact:
-    email: "apiteam@swagger.io"
-  license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-host: "petstore.swagger.io"
-basePath: "/v2"
+  description: |-
+    # Intro
+
+    This website documents the API methods available for the `wrkz-wallet-api` program.
+
+    The default API url is [127.0.0.1:8070](http://127.0.0.1:8070).
+
+    Note that this program is distinct from `wrkz-service`, which uses a different API.
+    The api docs for `wrkz-service` can be found [here](https://wrkz-service-docs.wrkz.work/).
+
+    When using the docs, be aware that you can click the 'Model' tab to get a description of all available parameters, their types, and an example value.
+
+    # Initialization
+
+    * Start by launching the `wrkz-wallet-api` program.
+    * From a terminal (or via a programming language):
+
+    ```
+    ./wrkz-wallet-api --rpc-password somepassword
+    ```
+
+    * Or if you're on windows:
+
+    ```
+    wrkz-wallet-api.exe --rpc-password somepassword
+    ```
+
+    * An RPC password is always required, and you should then provide this password with every request to the API, in the `X-API-KEY` header.
+
+    * If you want to see the available configuration options for the `wrkz-wallet-api`, launch the program with:
+    ```
+    ./wrkz-wallet-api --help
+    ```
+
+    * Note that you cannot generate/open a wallet via the command line, only via the API.
+      This is by design to prevent application developers having to parse command line output.
+
+    # Try it Out
+
+    If you want to test wrkz-wallet-api out without doing any programming, you can use the 'Try it out' section in swagger.
+    * Start by launching your wallet with CORS enabled:
+
+    ```
+    ./wrkz-wallet-api --rpc-password "mypassword" --enable-cors "*"
+    ```
+
+    * Click the 'Authorize' button in Swagger, and type in the RPC password you just chose - in this case, "mypassword", and click 'Authorize'.
+    * Click a method to expand it, then click the 'Try it Out' button.
+    * You can modify the parameters you want to send here, and then hit 'Execute' to send the request.
+    * Note that this may not work in Firefox, I had to use Chrome to get it to work. F12 (developer console) may help diagnose CORS issues.
+
+    # API Wrappers
+
+    Finally, whilst you may send raw HTTP requests to the API url, you may be interested in an API/RPC wrapper.
+
+    These can be generated for many languages, by using the `Generate Client` option in the top menu.
+    Be patient, this can take some time to complete.
+
+    # Support
+
+    If you are having issues, please stop by our [discord](https://chat.wrkz.work) and visit the `#development` channel for assistance.
+  version: 1.0.0
+  title: wrkz-wallet-api
 tags:
-- name: "pet"
-  description: "Everything about your Pets"
-  externalDocs:
-    description: "Find out more"
-    url: "http://swagger.io"
-- name: "store"
-  description: "Access to Petstore orders"
-- name: "user"
-  description: "Operations about user"
-  externalDocs:
-    description: "Find out more about our store"
-    url: "http://swagger.io"
-schemes:
-- "https"
-- "http"
+  - name: wallet
+    description: Opening and creating wallets
+  - name: addresses
+    description: 'Creating addresses, importing addresses'
+  - name: node
+    description: 'Get node details, swap node'
+  - name: keys
+    description: Get private keys or mnemonic seed
+  - name: transactions
+    description: 'Get a list of transactions, send a transaction'
+  - name: balance
+    description: Get a wallets or an addresses balance
+  - name: misc
+    description: 'Miscellaneous operations, such as saving, getting status, etc'
 paths:
-  /pet/{petId}/uploadImage:
+  /wallet/open:
     post:
       tags:
-      - "pet"
-      summary: "uploads an image"
-      description: ""
-      operationId: "uploadFile"
-      consumes:
-      - "multipart/form-data"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet to update"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "additionalMetadata"
-        in: "formData"
-        description: "Additional data to pass to server"
-        required: false
-        type: "string"
-      - name: "file"
-        in: "formData"
-        description: "file to upload"
-        required: false
-        type: "file"
+        - wallet
+      summary: Opens an already existing wallet
       responses:
-        200:
-          description: "successful operation"
+        '200':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/AlreadyOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+      parameters:
+        - in: body
+          name: body
+          required: true
           schema:
-            $ref: "#/definitions/ApiResponse"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet:
+            $ref: '#/definitions/Wallet'
+  /wallet/import/key:
     post:
       tags:
-      - "pet"
-      summary: "Add a new pet to the store"
-      description: ""
-      operationId: "addPet"
-      consumes:
-      - "application/json"
-      - "application/xml"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Pet object that needs to be added to the store"
-        required: true
-        schema:
-          $ref: "#/definitions/Pet"
+        - wallet
+      summary: Imports a wallet with a private spend and view key
       responses:
-        405:
-          description: "Invalid input"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
+        '200':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/AlreadyOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/WalletKeyImport'
+  /wallet/import/seed:
+    post:
+      tags:
+        - wallet
+      summary: Imports a wallet using a mnemonic seed
+      responses:
+        '200':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/AlreadyOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/WalletSeedImport'
+  /wallet/import/view:
+    post:
+      tags:
+        - wallet
+      summary: Imports a view only wallet with a private view key and public address
+      description: >-
+        Note that view only wallets can only see incoming transactions, so
+        balance may be inflated, and they cannot send transactions.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/WalletViewImport'
+      responses:
+        '200':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/AlreadyOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /wallet/create:
+    post:
+      tags:
+        - wallet
+      summary: Creates a new wallet
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Wallet'
+      responses:
+        '200':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/AlreadyOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /wallet:
+    delete:
+      tags:
+        - wallet
+      summary: Closes and saves the opened wallet
+      responses:
+        '200':
+          $ref: '#/responses/Success'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /save:
     put:
       tags:
-      - "pet"
-      summary: "Update an existing pet"
-      description: ""
-      operationId: "updatePet"
-      consumes:
-      - "application/json"
-      - "application/xml"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Pet object that needs to be added to the store"
-        required: true
-        schema:
-          $ref: "#/definitions/Pet"
+        - misc
+      summary: Saves the wallet state
       responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-        405:
-          description: "Validation exception"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/findByStatus:
-    get:
-      tags:
-      - "pet"
-      summary: "Finds Pets by status"
-      description: "Multiple status values can be provided with comma separated strings"
-      operationId: "findPetsByStatus"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "status"
-        in: "query"
-        description: "Status values that need to be considered for filter"
-        required: true
-        type: "array"
-        items:
-          type: "string"
-          enum:
-          - "available"
-          - "pending"
-          - "sold"
-          default: "available"
-        collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid status value"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/findByTags:
-    get:
-      tags:
-      - "pet"
-      summary: "Finds Pets by tags"
-      description: "Multiple tags can be provided with comma separated strings. Use\
-        \ tag1, tag2, tag3 for testing."
-      operationId: "findPetsByTags"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "tags"
-        in: "query"
-        description: "Tags to filter by"
-        required: true
-        type: "array"
-        items:
-          type: "string"
-        collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid tag value"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-      deprecated: true
-  /pet/{petId}:
-    get:
-      tags:
-      - "pet"
-      summary: "Find pet by ID"
-      description: "Returns a single pet"
-      operationId: "getPetById"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet to return"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-      - api_key: []
+        '200':
+          $ref: '#/responses/Success'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /export/json:
     post:
       tags:
-      - "pet"
-      summary: "Updates a pet in the store with form data"
-      description: ""
-      operationId: "updatePetWithForm"
-      consumes:
-      - "application/x-www-form-urlencoded"
-      produces:
-      - "application/json"
-      - "application/xml"
+        - misc
+      summary: Exports the wallet data to JSON into the filepath given
       parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet that needs to be updated"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "name"
-        in: "formData"
-        description: "Updated name of the pet"
-        required: false
-        type: "string"
-      - name: "status"
-        in: "formData"
-        description: "Updated status of the pet"
-        required: false
-        type: "string"
-      responses:
-        405:
-          description: "Invalid input"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-    delete:
-      tags:
-      - "pet"
-      summary: "Deletes a pet"
-      description: ""
-      operationId: "deletePet"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "api_key"
-        in: "header"
-        required: false
-        type: "string"
-      - name: "petId"
-        in: "path"
-        description: "Pet id to delete"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /store/order:
-    post:
-      tags:
-      - "store"
-      summary: "Place an order for a pet"
-      description: ""
-      operationId: "placeOrder"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "order placed for purchasing the pet"
-        required: true
-        schema:
-          $ref: "#/definitions/Order"
-      responses:
-        200:
-          description: "successful operation"
+        - in: body
+          name: body
+          required: false
           schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid Order"
-  /store/order/{orderId}:
-    get:
-      tags:
-      - "store"
-      summary: "Find purchase order by ID"
-      description: "For valid response try integer IDs with value >= 1 and <= 10.\
-        \ Other values will generated exceptions"
-      operationId: "getOrderById"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "orderId"
-        in: "path"
-        description: "ID of pet that needs to be fetched"
-        required: true
-        type: "integer"
-        maximum: 10
-        minimum: 1
-        format: "int64"
+            type: object
+            properties:
+              filename:
+                description: >-
+                  The filepath to save the wallet JSON to. Note that this is
+                  relative to where wrkz-wallet-api was launched from - it is
+                  recommended you use an absolute path.
+                type: string
+                example: wallet-data.json
       responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-    delete:
-      tags:
-      - "store"
-      summary: "Delete purchase order by ID"
-      description: "For valid response try integer IDs with positive integer value.\
-        \ Negative or non-integer values will generate API errors"
-      operationId: "deleteOrder"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "orderId"
-        in: "path"
-        description: "ID of the order that needs to be deleted"
-        required: true
-        type: "integer"
-        minimum: 1
-        format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-  /store/inventory:
-    get:
-      tags:
-      - "store"
-      summary: "Returns pet inventories by status"
-      description: "Returns a map of status codes to quantities"
-      operationId: "getInventory"
-      produces:
-      - "application/json"
-      parameters: []
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "object"
-            additionalProperties:
-              type: "integer"
-              format: "int32"
-      security:
-      - api_key: []
-  /user/createWithArray:
-    post:
-      tags:
-      - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithArrayInput"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of user object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/createWithList:
-    post:
-      tags:
-      - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithListInput"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of user object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/{username}:
-    get:
-      tags:
-      - "user"
-      summary: "Get user by user name"
-      description: ""
-      operationId: "getUserByName"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be fetched. Use user1 for testing. "
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/User"
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
+        '200':
+          $ref: '#/responses/Success'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /reset:
     put:
       tags:
-      - "user"
-      summary: "Updated user"
-      description: "This can only be done by the logged in user."
-      operationId: "updateUser"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
+        - misc
+      summary: >-
+        Resets and saves the wallet, beginning scanning from height given, if
+        any
       parameters:
-      - name: "username"
-        in: "path"
-        description: "name that need to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated user object"
-        required: true
-        schema:
-          $ref: "#/definitions/User"
-      responses:
-        400:
-          description: "Invalid user supplied"
-        404:
-          description: "User not found"
-    delete:
-      tags:
-      - "user"
-      summary: "Delete user"
-      description: "This can only be done by the logged in user."
-      operationId: "deleteUser"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
-  /user/login:
-    get:
-      tags:
-      - "user"
-      summary: "Logs user into the system"
-      description: ""
-      operationId: "loginUser"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "query"
-        description: "The user name for login"
-        required: true
-        type: "string"
-      - name: "password"
-        in: "query"
-        description: "The password for login in clear text"
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          headers:
-            X-Expires-After:
-              type: "string"
-              format: "date-time"
-              description: "date in UTC when token expires"
-            X-Rate-Limit:
-              type: "integer"
-              format: "int32"
-              description: "calls per hour allowed by the user"
+        - in: body
+          name: body
+          required: false
           schema:
-            type: "string"
-        400:
-          description: "Invalid username/password supplied"
-  /user/logout:
+            type: object
+            properties:
+              scanHeight:
+                description: The block height to start scanning from
+                type: integer
+                example: 300000
+                default: 0
+                format: int64
+      responses:
+        '200':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /node:
     get:
       tags:
-      - "user"
-      summary: "Logs out current logged in user session"
-      description: ""
-      operationId: "logoutUser"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters: []
+        - node
+      summary: 'Gets the node address, port, fee, and fee address'
       responses:
-        default:
-          description: "successful operation"
-  /user:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            allOf:
+              - $ref: '#/definitions/Node'
+              - properties:
+                  nodeFee:
+                    type: integer
+                    description: >-
+                      The fee the node you are connected to on each transaction
+                      (in atomic units)
+                    example: 1000
+                  nodeAddress:
+                    type: string
+                    description: 'The address the node fee gets sent to, if non zero'
+                    example: >-
+                      TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+    put:
+      tags:
+        - node
+      summary: Sets the node address and port
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Node'
+      responses:
+        '202':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /addresses/validate:
     post:
       tags:
-      - "user"
-      summary: "Create user"
-      description: "This can only be done by the logged in user."
-      operationId: "createUser"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
+        - misc
+      summary: >-
+        Validate an address. If the address is valid, a 200 response code will
+        be returned, else a 400 response code will be returned.
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Created user object"
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              address:
+                type: string
+                description: The address to validate
+                example: >-
+                  TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              isIntegrated:
+                type: boolean
+                description: Whether the address is an integrated address
+                example: true
+              paymentID:
+                type: string
+                description: >-
+                  If the address is integrated, this will hold the integrated
+                  payment ID
+                example: ''
+              actualAddress:
+                type: string
+                description: >-
+                  If the address is integrated, this will hold the extracted
+                  actual address. Otherwise, it will be the passed in address.
+                example: >-
+                  TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4w
+              publicSpendKey:
+                type: string
+                description: The public spend key of the passed in address
+                example: >-
+                  88032068e8209480bc634a48a00795c6a24c248a50f0937c168ac96ad0ba240d
+              publicViewKey:
+                type: string
+                description: The public view key of the passed in address
+                example: >-
+                  8d635efe0077ec70006732a847a36adbc5b108a3e7cebdbb93e0cfc35fcd8d45
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+  /keys:
+    get:
+      tags:
+        - keys
+      summary: Gets the wallet containers shared private view key
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              privateViewKey:
+                type: string
+                description: The private view key
+                example: >-
+                  85baeb8ae23bf266c68a5845f1ff13af7ff221f46e4dfc1293eec9a3e211a90a
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/keys/{address}':
+    parameters:
+      - $ref: '#/parameters/address'
+    get:
+      tags:
+        - keys
+      summary: Gets the public and private spend key for the given address
+      description: Note that this method cannot be used with a view only wallet
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              privateSpendKey:
+                type: string
+                description: The private spend key
+                example: >-
+                  85baeb8ae23bf266c68a5845f1ff13af7ff221f46e4dfc1293eec9a3e211a90a
+              publicSpendKey:
+                type: string
+                description: The public spend key
+                example: >-
+                  85baeb8ae23bf266c68a5845f1ff13af7ff221f46e4dfc1293eec9a3e211a90a
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/keys/mnemonic/{address}':
+    parameters:
+      - $ref: '#/parameters/address'
+    get:
+      tags:
+        - keys
+      summary: 'Gets the mnemonic seed for the given address, if possible'
+      description: Note that this method cannot be used with a view only wallet
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              mnemonicSeed:
+                type: string
+                description: The mnemonic seed
+                example: >-
+                  leech lifestyle newt tarnished vials weavers decay nerves
+                  buying taken sample after jailed cupcake token pavements
+                  welders gifts ferry keep humid abbey emails entrance leech
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /status:
+    get:
+      tags:
+        - misc
+      summary: 'Get the wallet sync status, peer count, and hashrate'
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              walletBlockCount:
+                type: integer
+                format: uint64
+                description: The amount of blocks the wallet has scanned
+                example: 100000
+              localDaemonBlockCount:
+                type: integer
+                format: uint64
+                description: >-
+                  The amount of blocks the daemon the wallet is connected to has
+                  synced
+                example: 800000
+              networkBlockCount:
+                type: integer
+                format: uint64
+                description: The amount of blocks the network has
+                example: 900000
+              peerCount:
+                type: integer
+                format: uint32
+                description: The amount of peers (incoming + outgoing) peers the daemon has
+                example: 20
+              hashrate:
+                type: integer
+                format: uint64
+                description: The hashrate the last local block the daemon knows about has
+                example: 123456789
+              isViewWallet:
+                type: boolean
+                description: >-
+                  Whether this wallet is a view only wallet. Certain operations
+                  are illegal on a view only wallet, such as transferring.
+                example: false
+              subWalletCount:
+                type: integer
+                description: The amount of subwallets in the container
+                example: 1
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /addresses:
+    get:
+      tags:
+        - addresses
+      summary: Gets a list of all addresses in the wallet container
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              addresses:
+                type: array
+                items:
+                  type: string
+                example:
+                  - >-
+                    TRTLv2cT32cZbF6KvnU69LNxptYFBMCKs3yqLmCAVjPW4rNTExpB7RpGKGJEkD1E9MVmM8SUUJfUh42Ajo1Hgz5wUN6budvzaq
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/addresses/{address}':
+    parameters:
+      - $ref: '#/parameters/address'
+    delete:
+      tags:
+        - addresses
+      summary: Deletes the given subwallet from the container
+      description: >-
+        Note that you cannot delete the 'primary' address, the first address
+        created in the wallet.
+      responses:
+        '200':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /addresses/primary:
+    get:
+      tags:
+        - addresses
+      summary: Gets the 'primary' address
+      description: >-
+        The primary address is the first wallet created, and the one used as the
+        change address if not specified.
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              address:
+                type: string
+                description: The primary address
+                example: >-
+                  TRTLv2cT32cZbF6KvnU69LNxptYFBMCKs3yqLmCAVjPW4rNTExpB7RpGKGJEkD1E9MVmM8SUUJfUh42Ajo1Hgz5wUN6budvzaq
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /addresses/create:
+    post:
+      tags:
+        - addresses
+      summary: 'Creates a new, random address in the wallet container'
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              address:
+                type: string
+                description: The created address
+                example: >-
+                  TRTLv2cT32cZbF6KvnU69LNxptYFBMCKs3yqLmCAVjPW4rNTExpB7RpGKGJEkD1E9MVmM8SUUJfUh42Ajo1Hgz5wUN6budvzaq
+              privateSpendKey:
+                type: string
+                description: >-
+                  The corresponding private spend key for this address, can be
+                  used to restore along with the shared private view key
+                example: >-
+                  6d4a7c160cbd4c9de33eeb161ff30539d2e28b447eb5af73523cc3379c591c83
+              publicSpendKey:
+                type: string
+                description: >-
+                  The corresponding public spend key for this address, can be
+                  used to restore a view wallet along with the shared private
+                  view key
+                example: >-
+                  6d4a7c160cbd4c9de33eeb161ff30539d2e28b447eb5af73523cc3379c591c83
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /addresses/import:
+    post:
+      tags:
+        - addresses
+      summary: Imports a subwallet with the given private spend key
+      description: >-
+        It is HIGHLY recommended you provide a scan height with this operation -
+        wallet syncing will have to begin again from the scan height given
+        (defaults to zero) if the scan height is less than the height of the
+        current wallet sync status.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            required:
+              - privateSpendKey
+            properties:
+              scanHeight:
+                description: The block height to start scanning from
+                type: integer
+                example: 300000
+                default: 0
+                format: uint64
+              privateSpendKey:
+                description: 64 char hex private spend key
+                type: string
+                example: >-
+                  5c703d9bde0b7cd5ff3e19ea826a44066534661a7322c85e854e73f06e49cd06
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              address:
+                type: string
+                description: The created address
+                example: >-
+                  TRTLv2cT32cZbF6KvnU69LNxptYFBMCKs3yqLmCAVjPW4rNTExpB7RpGKGJEkD1E9MVmM8SUUJfUh42Ajo1Hgz5wUN6budvzaq
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /addresses/import/view:
+    post:
+      tags:
+        - addresses
+      summary: Imports a view only subwallet with the given publicSpendKey
+      description: >-
+        It is HIGHLY recommended you provide a scan height with this operation -
+        wallet syncing will have to begin again from the scan height given
+        (defaults to zero) if the scan height is less than the height of the
+        current wallet sync status.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            required:
+              - publicSpendKey
+            properties:
+              scanHeight:
+                description: The block height to start scanning from
+                type: integer
+                example: 300000
+                default: 0
+                format: uint64
+              publicSpendKey:
+                description: 64 char hex public spend key
+                type: string
+                example: >-
+                  5c703d9bde0b7cd5ff3e19ea826a44066534661a7322c85e854e73f06e49cd06
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              address:
+                type: string
+                description: The created address
+                example: >-
+                  TRTLv2cT32cZbF6KvnU69LNxptYFBMCKs3yqLmCAVjPW4rNTExpB7RpGKGJEkD1E9MVmM8SUUJfUh42Ajo1Hgz5wUN6budvzaq
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/addresses/{address}/{paymentID}':
+    parameters:
+      - $ref: '#/parameters/address'
+      - $ref: '#/parameters/paymentID'
+    get:
+      tags:
+        - addresses
+      summary: Creates an integrated address from an address and payment ID
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              integratedAddress:
+                type: string
+                description: The integrated address
+                example: >-
+                  TRTLuxiNXhy96RNDkv2jx29jL7GdTWYBmA4r7K8KRpDWA4hJJnTZEgFHFzxqvmBLtz94oF4uPokQdHbV9j2g7S6LA4hKPvjZEFS2CiAj6DL8isYELmTec8Z9BK56oL1KMhjMRSMyfwYaogKg17hQKC23CHPBcHqrHHGzdRYUk3HGqkMwXbHg3BoCpXD
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /transactions:
+    get:
+      tags:
+        - transactions
+      summary: Gets a list of all transactions in the wallet container
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/Transaction'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/transactions/hash/{hash}':
+    parameters:
+      - $ref: '#/parameters/hash'
+    get:
+      tags:
+        - transactions
+      summary: 'Gets details on the given transaction, if found'
+      description: >-
+        Note that the transaction must be contained in this wallet, and must not
+        be unconfirmed. E.g, you must get this hash back when calling
+        /transactions
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                $ref: '#/definitions/Transaction'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '404':
+          description: The transaction hash was not found.
+        '500':
+          $ref: '#/responses/InternalError'
+  /transactions/unconfirmed:
+    get:
+      tags:
+        - transactions
+      summary: >-
+        Gets a list of all unconfirmed, outgoing transactions in the wallet
+        container
+      description: >-
+        Note that this DOES NOT include incoming transactions in the pool. This
+        only applies to transactions that have been sent by this wallet file,
+        and have not been added to a block yet.
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/Transaction'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/transactions/unconfirmed/{address}':
+    parameters:
+      - $ref: '#/parameters/address'
+    get:
+      tags:
+        - transactions
+      summary: 'Gets a list of unconfirmed, outgoing transactions, for the given address'
+      description: >-
+        Note that this DOES NOT include incoming transactions in the pool. This
+        only applies to transactions that have been sent by this wallet file,
+        and have not been added to a block yet.
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/Transaction'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/transactions/{startHeight}':
+    parameters:
+      - $ref: '#/parameters/startHeight'
+    get:
+      tags:
+        - transactions
+      summary: >-
+        Returns transactions for the wallet starting at start height for 1,000
+        blocks
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/Transaction'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/transactions/{startHeight}/{endHeight}':
+    parameters:
+      - $ref: '#/parameters/startHeight'
+      - $ref: '#/parameters/endHeight'
+    get:
+      tags:
+        - transactions
+      summary: >-
+        Returns transactions for the wallet starting at start height until end
+        height
+      description: Note that start height must be < end height
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/Transaction'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/transactions/address/{address}/{startHeight}':
+    parameters:
+      - $ref: '#/parameters/address'
+      - $ref: '#/parameters/startHeight'
+    get:
+      tags:
+        - transactions
+      summary: >-
+        Returns transactions for the wallet starting at start height for 1,000
+        blocks, that belong to the given address
+      description: >-
+        Note that the transfers array will still contain transfers to other
+        addresses, if present
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/Transaction'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/transactions/address/{address}/{startHeight}/{endHeight}':
+    parameters:
+      - $ref: '#/parameters/address'
+      - $ref: '#/parameters/startHeight'
+      - $ref: '#/parameters/endHeight'
+    get:
+      tags:
+        - transactions
+      summary: >-
+        Returns transactions for the wallet starting at start height until end
+        height, that belong to the given address
+      description: >-
+        Note that start height must be < end height. Also note that the
+        transfers array will still contain transfers to other addresses, if
+        present.
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/Transaction'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /transactions/send/basic:
+    post:
+      tags:
+        - transactions
+      summary: Sends a transaction
+      description: >-
+        This method will take funds from all subwallets as needed, and will use
+        the primary address as the change address. It also uses a default fee,
+        and default mixin. If this is not acceptable, please use the /advanced
+        call instead.
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactionHash:
+                type: string
+                example: >-
+                  396e2a782c9ce9993982c6f93e305b05306d0e5794f57157fbac78581443c55f
+              fee:
+                type: number
+                example: 1000
+              relayedToNetwork:
+                type: boolean
+                example: true
+                default: true
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            required:
+              - address
+              - amount
+            properties:
+              destination:
+                type: string
+                description: The address to send funds to
+                example: >-
+                  TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+              amount:
+                type: number
+                format: uint64
+                description: The amount of TRTL to send (in atomic units)
+                example: 1234
+              paymentID:
+                type: string
+                description: The payment ID to use
+                example: >-
+                  38a8224a4c8bc5f060555cf9e89551dcd0cbb1c587a52b63e98f71280c362ee4
+  /transactions/prepare/basic:
+    post:
+      tags:
+        - transactions
+      summary: Creates a transaction but does not relay it to the network
+      description: >-
+        This method will take funds from all subwallets as needed, and will use
+        the primary address as the change address. It also uses a default fee,
+        and default mixin. If this is not acceptable, please use the /advanced
+        call instead. Allows you to review the created transactions fee before
+        deciding whether to commit to paying that fee. Prepared transactions can
+        be sent using `/transactions/send/prepared`, or cancelled with
+        `/transactions/prepared`. Note that every parameters sans destinations
+        is optional.
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactionHash:
+                type: string
+                example: >-
+                  396e2a782c9ce9993982c6f93e305b05306d0e5794f57157fbac78581443c55f
+              fee:
+                type: number
+                example: 1000
+              relayedToNetwork:
+                type: boolean
+                example: false
+                default: false
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            required:
+              - address
+              - amount
+            properties:
+              destination:
+                type: string
+                description: The address to send funds to
+                example: >-
+                  TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+              amount:
+                type: number
+                format: uint64
+                description: The amount of TRTL to send (in atomic units)
+                example: 1234
+              paymentID:
+                type: string
+                description: The payment ID to use
+                example: >-
+                  38a8224a4c8bc5f060555cf9e89551dcd0cbb1c587a52b63e98f71280c362ee4
+  /transactions/send/advanced:
+    post:
+      tags:
+        - transactions
+      summary: Sends a transaction
+      description: Note that every parameters sans destinations is optional.
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactionHash:
+                type: string
+                example: >-
+                  396e2a782c9ce9993982c6f93e305b05306d0e5794f57157fbac78581443c55f
+              fee:
+                type: number
+                example: 1000
+              relayedToNetwork:
+                type: boolean
+                example: true
+                default: true
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/SendTransactionAdvanced'
+  /transactions/prepare/advanced:
+    post:
+      tags:
+        - transactions
+      summary: Creates a transaction but does not relay it to the network
+      description: >-
+        Allows you to review the created transactions fee before deciding
+        whether to commit to paying that fee. Prepared transactions can be sent
+        using `/transactions/send/prepared`, or cancelled with
+        `/transactions/prepared`. Note that every parameters sans destinations
+        is optional.
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactionHash:
+                type: string
+                example: >-
+                  396e2a782c9ce9993982c6f93e305b05306d0e5794f57157fbac78581443c55f
+              fee:
+                type: number
+                example: 1000
+              relayedToNetwork:
+                type: boolean
+                example: false
+                default: false
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/SendTransactionAdvanced'
+  /transactions/send/prepared:
+    post:
+      tags:
+        - transactions
+      summary: Sends a previously prepared transaction
+      description: >-
+        Submits a transaction that was previously prepared with
+        `/transactions/prepare/basic` or `/transactions/prepare/advanced` to the
+        network.
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactionHash:
+                type: string
+                example: >-
+                  1982d8903c5e2b0914e6586e5b715758823e4903c2bacda7aa519ff6feb1476e
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+    parameters:
+      - in: body
+        name: body
         required: true
         schema:
-          $ref: "#/definitions/User"
+          properties:
+            transactionHash:
+              type: string
+              description: >-
+                The transaction hash returned by a previous
+                `/transactions/prepare/basic` or
+                `/transactions/prepare/advanced` call
+              example: 1982d8903c5e2b0914e6586e5b715758823e4903c2bacda7aa519ff6feb1476e
+  '/transactions/prepared/{hash}':
+    parameters:
+      - in: path
+        name: hash
+        required: true
+        type: string
+        description: >-
+          The prepared transaction hash to cancel. This hash is returned from
+          the `/transactions/prepared/basic` or
+          `/transactions/prepared/advanced` methods.
+    delete:
+      tags:
+        - transactions
+      summary: Cancels a previously prepared transaction
+      description: >-
+        While it is not mandatory to call this method for a prepared transaction
+        you do not wish to send, it is highly advised, as it will free up RAM.
       responses:
-        default:
-          description: "successful operation"
+        '200':
+          $ref: '#/responses/Success'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '404':
+          description: >-
+            The prepared transaction hash given was not found. Note that
+            prepared transactions are lost upon restarting the wallet process.
+        '500':
+          $ref: '#/responses/InternalError'
+  /transactions/send/fusion/basic:
+    post:
+      tags:
+        - transactions
+      summary: Sends a fusion transaction
+      description: >-
+        Fusion transactions are zero fee, and seek to combine small inputs into
+        larger ones, to allow for larger transactions. Many fusions may be
+        required to fully optimize a wallet.
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactionHash:
+                type: string
+                example: >-
+                  396e2a782c9ce9993982c6f93e305b05306d0e5794f57157fbac78581443c55f
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /transactions/send/fusion/advanced:
+    post:
+      tags:
+        - transactions
+      summary: Sends a fusion transaction
+      description: >-
+        Fusion transactions are zero fee, and seek to combine small inputs into
+        larger ones, to allow for larger transactions. Many fusions may be
+        required to fully optimize a wallet. Every parameter is optional.
+      responses:
+        '201':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactionHash:
+                type: string
+                example: >-
+                  396e2a782c9ce9993982c6f93e305b05306d0e5794f57157fbac78581443c55f
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            mixin:
+              type: number
+              description: The mixin level to use
+              example: 3
+            sourceAddresses:
+              type: array
+              items:
+                type: string
+                example: >-
+                  TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+              description: >-
+                The addresses to draw funds for the transaction from (must be an
+                address in this container)
+            destination:
+              type: string
+              description: >-
+                The destination address to send funds to. Must exist in this
+                wallet.
+              example: >-
+                TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+            optimizeTarget:
+              type: number
+              description: >-
+                If given, we will not fuse inputs larger than this value. Value
+                given must be a valid input amount, i.e. only a single
+                significant leading digit. For example, 20000 is fine, 23456 is
+                not.
+              example: 10000000
+  '/transactions/privatekey/{hash}':
+    parameters:
+      - $ref: '#/parameters/hash'
+    get:
+      tags:
+        - transactions
+      summary: >-
+        Gets the transaction private key of the given transaction. This can be
+        used to audit a transaction.
+      description: >-
+        The transaction must have been sent by this wallet container. If the
+        wallet container has been reimported, it will not be present.
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              transactionPrivateKey:
+                type: string
+                example: >-
+                  199c0b9c40e192f1917a2f317c72fb6684081c744c3286793e6d63b5d3f6930a
+                description: The transaction private key
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /balance:
+    get:
+      tags:
+        - balance
+      summary: Get the balance for the entire wallet container
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              unlocked:
+                type: number
+                format: uint64
+                description: 'Unlocked, spendable balance. In atomic units.'
+                example: 1234
+              locked:
+                type: number
+                format: uint64
+                description: >-
+                  Locked, unspendable balance. Possibly unconfirmed change, or a
+                  transaction with an unlock time specified. In atomic units.
+                example: 123
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  '/balance/{address}':
+    parameters:
+      - $ref: '#/parameters/address'
+    get:
+      tags:
+        - balance
+      summary: Get the balance for a specific address
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: object
+            properties:
+              unlocked:
+                type: number
+                format: uint64
+                description: 'Unlocked, spendable balance. In atomic units.'
+                example: 1234
+              locked:
+                type: number
+                format: uint64
+                description: >-
+                  Locked, unspendable balance. Possibly unconfirmed change, or a
+                  transaction with an unlock time specified. In atomic units.
+                example: 123
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
+  /balances:
+    get:
+      tags:
+        - balance
+      summary: Get the balance for every address
+      responses:
+        '200':
+          description: The operation completed successfully.
+          schema:
+            type: array
+            items:
+              properties:
+                unlocked:
+                  type: number
+                  format: uint64
+                  description: 'Unlocked, spendable balance. In atomic units.'
+                  example: 1234
+                locked:
+                  type: number
+                  format: uint64
+                  description: >-
+                    Locked, unspendable balance. Possibly unconfirmed change, or
+                    a transaction with an unlock time specified. In atomic
+                    units.
+                  example: 123
+                address:
+                  type: string
+                  description: The address this balance belongs to
+                  example: >-
+                    TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/UnauthorizedError'
+        '403':
+          $ref: '#/responses/NotOpen'
+        '500':
+          $ref: '#/responses/InternalError'
 securityDefinitions:
   api_key:
-    type: "apiKey"
-    name: "api_key"
-    in: "header"
-  petstore_auth:
-    type: "oauth2"
-    authorizationUrl: "https://petstore.swagger.io/oauth/authorize"
-    flow: "implicit"
-    scopes:
-      read:pets: "read your pets"
-      write:pets: "modify pets in your account"
+    type: apiKey
+    name: X-API-KEY
+    in: header
+    description: Your rpc password that you supplied on starting the wallet API.
+responses:
+  UnauthorizedError:
+    description: API key is missing or invalid.
+  AlreadyOpen:
+    description: 'A wallet is already open. Call DELETE on /wallet first, to close it.'
+  Success:
+    description: The operation completed successfully.
+  BadRequest:
+    description: 'A parse error occured, or an error occured processing your request.'
+    schema:
+      type: object
+      properties:
+        errorCode:
+          type: integer
+          description: >-
+            A numeric code representing the error, for programmatic use. Error
+            code mappings can be found here -
+            https://github.com/wrkzcoin/wrkzcoin/blob/development/src/errors/Errors.h
+            We will endeavour to not change these mappings.
+          example: 5
+        errorMessage:
+          type: string
+          description: >-
+            A human readable error message, for displaying to the user. It is
+            suggested for programmers to not pattern match on these, and instead
+            use the errorCode.
+          example: The password given for this wallet is incorrect.
+  NotOpen:
+    description: 'This operation requires a wallet to be open, and one has not been opened.'
+  InternalError:
+    description: >-
+      An exception was thrown whilst processing the request. See the console for
+      logs.
+security:
+  - api_key: []
 definitions:
-  ApiResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        format: "int32"
-      type:
-        type: "string"
-      message:
-        type: "string"
-  Category:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Category"
-  Pet:
-    type: "object"
+  Wallet:
     required:
-    - "name"
-    - "photoUrls"
+      - filename
+      - password
+    allOf:
+      - $ref: '#/definitions/Node'
+      - properties:
+          filename:
+            description: >-
+              The filename to store/load the wallet from. Note that this is
+              relative to where turtle-wallet-api was launched from - it is
+              recommended you use an absolute path.
+            type: string
+            example: mywallet.wallet
+          password:
+            description: The password used to open the wallet
+            type: string
+            example: supersecretpassword
+  WalletImport:
+    allOf:
+      - $ref: '#/definitions/Wallet'
+      - properties:
+          scanHeight:
+            description: The block height to start scanning from
+            type: integer
+            example: 300000
+            default: 0
+            format: uint64
+  WalletKeyImport:
+    required:
+      - privateViewKey
+      - privateSpendKey
+    allOf:
+      - $ref: '#/definitions/WalletImport'
+      - properties:
+          privateViewKey:
+            description: 64 char hex private view key
+            type: string
+            example: 493f522e1f46b5c07f753ed28dc2db9da5f571f28c2fa54f4c9a0a7941b09d0b
+          privateSpendKey:
+            description: 64 char hex private spend key
+            type: string
+            example: 5c703d9bde0b7cd5ff3e19ea826a44066534661a7322c85e854e73f06e49cd06
+  WalletSeedImport:
+    required:
+      - mnemonicSeed
+    allOf:
+      - $ref: '#/definitions/WalletImport'
+      - properties:
+          mnemonicSeed:
+            description: The 25 words mnemonic seed
+            type: string
+            example: >-
+              cynical waveform sixteen husband zebra ritual vexed jaws eccentric
+              jewels toenail having nabbing wept nozzle grunt tipsy flying pegs
+              feel upright lower racetrack sapling sapling
+  WalletViewImport:
+    required:
+      - privateViewKey
+      - address
+    allOf:
+      - $ref: '#/definitions/WalletImport'
+      - properties:
+          privateViewKey:
+            description: 64 char hex private view key
+            type: string
+            example: 493f522e1f46b5c07f753ed28dc2db9da5f571f28c2fa54f4c9a0a7941b09d0b
+          address:
+            description: 99 char public TRTL address
+            type: string
+            example: >-
+              TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+  Node:
+    type: object
     properties:
-      id:
-        type: "integer"
-        format: "int64"
-      category:
-        $ref: "#/definitions/Category"
-      name:
-        type: "string"
-        example: "doggie"
-      photoUrls:
-        type: "array"
-        xml:
-          wrapped: true
+      daemonHost:
+        description: The daemon host to sync the wallet with
+        type: string
+        example: 127.0.0.1
+        default: 127.0.0.1
+      daemonPort:
+        description: The daemon port to sync the wallet with
+        type: integer
+        format: uint16
+        default: 11898
+        example: 11898
+  SendTransactionAdvanced:
+    type: object
+    required:
+      - destinations
+    example:
+      destinations:
+        - address: >-
+            TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+          amount: 1234
+        - address: >-
+            TRTLv3r4N3Jbk7FApJXN3M66xWWr8FhbAiwGdEJC2wF1hTKGxnwUzhH8pFydrruvdtPSVTCMUKWGdSrAitgnEVFp8356HCkKHZG
+          amount: 5000
+      paymentID: 38a8224a4c8bc5f060555cf9e89551dcd0cbb1c587a52b63e98f71280c362ee4
+      unlockTime: 2200000
+    properties:
+      destinations:
+        type: array
         items:
-          type: "string"
-          xml:
-            name: "photoUrl"
-      tags:
-        type: "array"
-        xml:
-          wrapped: true
+          type: object
+          properties:
+            address:
+              type: string
+              description: The address to send to
+              example: >-
+                TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+            amount:
+              type: number
+              format: uint64
+              description: The amount of TRTL to send (in atomic units)
+              example: 1234
+      mixin:
+        type: number
+        description: The mixin level to use
+        example: 3
+        default: The default mixin defined by the core software for the current height
+      fee:
+        type: number
+        description: The fee to use with this transaction (in atomic units)
+        example: 2430
+        format: uint64
+      feePerByte:
+        type: number
+        description: >-
+          The amount in atomic units to pay for each byte of the resulting
+          transaction size
+        example: 2
+        default: 1.953125
+        format: double
+      sourceAddresses:
+        type: array
         items:
-          xml:
-            name: "tag"
-          $ref: "#/definitions/Tag"
-      status:
-        type: "string"
-        description: "pet status in the store"
-        enum:
-        - "available"
-        - "pending"
-        - "sold"
-    xml:
-      name: "Pet"
-  Tag:
-    type: "object"
+          type: string
+          example: >-
+            TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+          description: >-
+            The addresses to draw funds for the transaction from (must be an
+            address in this container). Defaults to every address.
+          default: Every address in the container.
+      paymentID:
+        type: string
+        description: The payment ID to use
+        example: 38a8224a4c8bc5f060555cf9e89551dcd0cbb1c587a52b63e98f71280c362ee4
+        default: No payment ID
+      changeAddress:
+        type: string
+        description: >-
+          The address in this wallet to return any 'change' to if we have to
+          spend more than the requested amount. Defaults to primary address.
+        example: >-
+          TRTLv2Fyavy8CXG8BPEbNeCHFZ1fuDCYCZ3vW5H5LXN4K2M2MHUpTENip9bbavpHvvPwb4NDkBWrNgURAd5DB38FHXWZyoBh4wW
+        default: Wallet container primary address
+      unlockTime:
+        type: number
+        description: >-
+          When to unlock the transaction. A user cannot spend locked funds until
+          the unlock time has been reached. Defaults to zero if not given. Can
+          use either a block height, or a unix timestamp.
+        example: 1200000
+        default: 0
+        format: uint64
+      extra:
+        type: string
+        description: >-
+          Hex representation of any extra data to be included in the `tx_extra`
+          field of the transaction.
+        example: 48656c6c6f20576f726c64
+        default: ''
+  Transaction:
+    type: object
     properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Tag"
-  Order:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      petId:
-        type: "integer"
-        format: "int64"
-      quantity:
-        type: "integer"
-        format: "int32"
-      shipDate:
-        type: "string"
-        format: "date-time"
-      status:
-        type: "string"
-        description: "Order Status"
-        enum:
-        - "placed"
-        - "approved"
-        - "delivered"
-      complete:
-        type: "boolean"
-    xml:
-      name: "Order"
-  User:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      username:
-        type: "string"
-      firstName:
-        type: "string"
-      lastName:
-        type: "string"
-      email:
-        type: "string"
-      password:
-        type: "string"
-      phone:
-        type: "string"
-      userStatus:
-        type: "integer"
-        format: "int32"
-        description: "User Status"
-    xml:
-      name: "User"
+      blockHeight:
+        type: number
+        format: uint64
+        example: 800000
+        description: The block this transaction is contained in.
+      fee:
+        type: number
+        format: uint64
+        example: 10
+        description: >-
+          The amount the sender paid in miner fees for this transaction. In
+          atomic units.
+      hash:
+        type: string
+        example: 8e2dc89659409ea9c34a2e28f7350cefba304159c04cc4926acd12035a8b2379
+        description: The hash of this transaction
+      isCoinbaseTransaction:
+        type: boolean
+        example: false
+        description: Whether this transaction is a miner reward or a normal transaction.
+      paymentID:
+        type: string
+        example: 7fe73bd90ef05dea0b5c15fc78696619c50dd5f2ba628f2fd16a2e3445b1922f
+        description: An identifier supplied by the sender. May be "" (empty string)
+      timestamp:
+        type: number
+        format: uint64
+        example: 1543222082
+        description: The unix timestamp of the block this transaction is contained in.
+      unlockTime:
+        type: number
+        format: uint64
+        example: 0
+        description: >-
+          When this transaction unlocks for spending. If >= 50000000, treated as
+          a timestamp. Normally zero.
+      transfers:
+        type: object
+        properties:
+          address:
+            type: string
+            example: >-
+              TRTLv3ErzkY2CiAj6DL8isYELmTec8Z9BK56oL1KMhjMRSMyfwYaogKg17hQKC23CHPBcHqrHHGzdRYUk3HGqkMwXbHg3Dy2rH
+            description: >-
+              The receiving address of this transfer, or the sending address if
+              the amount is negative
+          amount:
+            type: number
+            format: int64
+            example: 1234
+            description: 'The amount of this transfer, in atomic units'
+host: '127.0.0.1:8070'
+schemes:
+  - http
+parameters:
+  address:
+    in: path
+    name: address
+    required: true
+    type: string
+    description: >-
+      The address to use for this operation. Should be a valid, 99 character
+      TRTL address.
+  paymentID:
+    in: path
+    name: paymentID
+    required: true
+    type: string
+    description: The payment ID to use for this operation. Should be a 64 char hex string.
+  hash:
+    in: path
+    name: hash
+    required: true
+    type: string
+    description: >-
+      The transaction hash to use for this operation. Should be a 64 char hex
+      string.
+  startHeight:
+    in: path
+    name: startHeight
+    required: true
+    type: number
+    description: The starting block height to use for this operation.
+  endHeight:
+    in: path
+    name: endHeight
+    required: true
+    type: number
+    description: The ending block height to use for this operation.
 externalDocs:
   description: "Find out more about Swagger"
   url: "http://swagger.io"
